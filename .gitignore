@@ -1,2 +1,8 @@
 # Temporary office files.
 ~$*
+
+# Configuration file.
+Config.xlsx
+
+# Error log file.
+Error.log
