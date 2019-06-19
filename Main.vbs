@@ -7,7 +7,7 @@ Const xlMaximized = -4137
 Dim vFileSystemObject: Set vFileSystemObject = CreateObject("Scripting.FileSystemObject")
 Dim vWScriptShell: Set vWScriptShell = CreateObject("WScript.Shell")
 
-' Set the environment variable that indicates the app has been executed by the initialization script.
+' Set the environment variable that indicates the workbook has been opened by the execute script.
 vWScriptShell.Environment("PROCESS")("APP_IS_EXECUTED_BY_SCRIPT") = "TRUE"
 
 ' Determine the project directory path and main workbook file name.
