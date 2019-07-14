@@ -30,3 +30,4 @@ The contained modules and classes require the VBA project to have references to 
 >> TODO: Do not use non-ANSI characters in code modules.
 >> TODO: Add IDE Options (color, syntax check, tabs, error handling method, ...)
 >> TODO: Add the enabling of VBIDE calls
+>> TODO: Assume the presence of Outlook, Internet Explorer, ...

@@ -204,7 +204,34 @@ Sub WriteTextFile( _
 End Sub
 
 Function GetLocalProjectDirectoryPath()
-	GetLocalProjectDirectoryPath = vFileSystemObject.GetParentFolderName(vFileSystemObject.GetParentFolderName(WScript.ScriptFullName))
+	With vFileSystemObject
+		GetLocalProjectDirectoryPath = .GetParentFolderName(.GetParentFolderName(WScript.ScriptFullName))
+	End With
+End Function
+
+Function LoadDeployDirectoryPath( _
+	vProjectDirectoryPath _
+)
+	' Declare local variables.
+	Dim vTextFileContent
+
+	' Load the file system object.
+	With vFileSystemObject
+		' Set the default result value.
+		LoadDeployDirectoryPath = vbNullString
+
+		' Load the contents of the deploy configuration file.
+		vTextFileContent = ReadTextFile(.BuildPath(vProjectDirectoryPath, "Deploy.txt"))
+
+		' Trim whitespace from the loaded contents.
+		vTextFileContent = Trim(Replace(Replace(vTextFileContent, vbCr, vbNullString), vbLf, vbNullString))
+
+		' Check the validity of the specified deploy directory path.
+		If .FolderExists(vTextFileContent) Then
+			' Set the result to be the contents of the deploy configuration file.
+			LoadDeployDirectoryPath = vTextFileContent
+		End If
+	End With
 End Function
 
 Function LoadBuildConfiguration( _

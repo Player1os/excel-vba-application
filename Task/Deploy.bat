@@ -1,3 +1,3 @@
 @echo off
 
-call ./Script/Import.vbs ./Script/Library.vbs ./Script/Deploy.vbs
+call .\Script\Base.vbs .\Script\Deploy.vbs

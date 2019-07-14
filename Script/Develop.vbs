@@ -34,9 +34,6 @@ With CreateObject("Excel.Application")
 
 		' Open the main workbook file the prepared password.
 		Call .Workbooks.Open(GetMainWorkbookFilePath(vProjectDirectoryPath), , , , GetMainWorkbookFilePassword(vBuildConfiguration))
-
-		' ' TODO.
-		' Call UnlockVBAProject(vConfigWorkbookExcelApplication)
 	End With
 
 	' Wait for the main workbook to be closed.
