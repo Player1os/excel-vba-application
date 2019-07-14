@@ -1,7 +1,7 @@
 Option Explicit
 
 Private Function pIsDebugModeEnabled()
-    IsDebugModeEnabled = VBA.Environ$("APP_IS_DEBUG_MODE_ENABLED") = "TRUE"
+    pIsDebugModeEnabled = VBA.Environ$("APP_IS_DEBUG_MODE_ENABLED") = "TRUE"
 End Function
 
 Private Sub pInitialize()
