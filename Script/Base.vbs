@@ -234,7 +234,7 @@ Function LoadBuildConfiguration( _
 
 			' Load the required reference.
 			Set vList = New ClsList
-			For Each vChildNode In .selectSingleNode("required-references").childNodes
+			For Each vChildNode In .selectSingleNode("required-references").selectNodes("item")
 				Set vItem = CreateObject("Scripting.Dictionary")
 				With vChildNode
 					Call vItem.Add("Name", .selectSingleNode("name").Text)
@@ -249,7 +249,7 @@ Function LoadBuildConfiguration( _
 
 			' Load the required library module file names.
 			Set vSet = New ClsSet
-			For Each vChildNode In .selectSingleNode("required-library-modules").childNodes
+			For Each vChildNode In .selectSingleNode("required-library-modules").selectNodes("filename")
 				Call vSet.Add(vChildNode.Text)
 			Next
 			Call LoadBuildConfiguration.Add("RequiredLibraryModuleSet", vSet)
@@ -398,7 +398,7 @@ End Sub
 Sub FormatExportedModuleFile( _
 	vFilePath _
 )
-
+	' TODO
 End Sub
 
 Sub ExportMainWorkbookModules( _
@@ -423,7 +423,7 @@ Sub ExportMainWorkbookModules( _
 		vSourceFolderPath = .BuildPath(vProjectDirectoryPath, "Source")
 
 		' Remove all of the old source module files.
-		For Each vModuleFile In .GetFolder(vSourceFolderPath)
+		For Each vModuleFile In .GetFolder(vSourceFolderPath).Files
 			Call vModuleFile.Delete
 		Next
 	End With
