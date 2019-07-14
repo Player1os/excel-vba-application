@@ -1,0 +1,4 @@
+@echo off
+
+:: Execute the SQL*PLUS script.
+sqlplus -s %SQL_PLUS_USERNAME%@%SQL_PLUS_DATABASE% <"%SQL_PLUS_PASSWORD_FILE_PATH%" "@%SQL_PLUS_SCRIPT_FILE_PATH%"

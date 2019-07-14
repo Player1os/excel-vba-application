@@ -1,7 +1,15 @@
 # Temporary office files.
 ~$*
 
-# Configuration file.
+# Build files.
+App.xlsm
+Execute.vbs
+Test.xlsm
+
+# Ignore the bootstrap execute script file.
+!Script/Execute.vbs
+
+# Runtime configuration file.
 Config.xlsx
 
 # Error log file.

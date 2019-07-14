@@ -25,3 +25,8 @@ The contained modules and classes require the VBA project to have references to 
 - **Microsoft Scripting Runtime**
 - **Microsoft VBScript Regular Expressions 5.5**
 - **Microsoft Visual Basic for Applications Extensibility 5.3**
+
+>> TODO: Do not use errors and program defensively.
+>> TODO: Do not use non-ANSI characters in code modules.
+>> TODO: Add IDE Options (color, syntax check, tabs, error handling method, ...)
+>> TODO: Add the enabling of VBIDE calls

@@ -1,0 +1,13 @@
+[
+	{
+		"command": "cscript.exe",
+		"parameters": [
+			"/NoLogo",
+			"\"C:\\Programs\\HeartbeatChecker\\Verifier.vbs\"",
+			"<",
+			"H:\\HeartBeat.txt"
+		],
+		"cronExpression": "00 30 * * * *",
+		"lastExecutionTimestampMs": 1549043575164
+	}
+]
