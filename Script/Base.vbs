@@ -14,6 +14,9 @@ Set vFileSystemObject = CreateObject("Scripting.FileSystemObject")
 Const fsoForReading = 1
 Const xlOpenXMLWorkbookMacroEnabled = 52
 Const xlMaximized = -4137
+Const vbext_ct_StdModule = 1
+Const vbext_ct_ClassModule = 2
+Const vbext_ct_MSForm = 3
 
 ' Define internal class constants.
 Const vClsListInitialArraySize = 32
@@ -398,7 +401,26 @@ End Sub
 Sub FormatExportedModuleFile( _
 	vFilePath _
 )
-	' TODO
+	' Declare local variables.
+	Dim vContent
+	Dim vSpaceBeforNewlineSequence
+
+	' Read the file content.
+	vContent = ReadTextFile(vFilePath)
+
+	' Make sure the file ends with a newline sequence.
+	If Right(vContent, 2) <> vbCrLf Then
+		vContent = vContent & vbCrLf
+	End If
+
+	' Make sure there is no whitespace before a newline sequence.
+	vSpaceBeforNewlineSequence = " " & vbCrLf
+	Do While InStr(vContent, vSpaceBeforNewlineSequence) <> 0
+		vContent = Replace(vContent, vSpaceBeforNewlineSequence, vbCrLf)
+	Loop
+
+	' Overwrite the file with the formatted content.
+	Call WriteTextFile(vFilePath, vContent)
 End Sub
 
 Sub ExportMainWorkbookModules( _
@@ -484,6 +506,9 @@ Sub ExportMainWorkbookModules( _
 		' Close the excel application instance.
 		Call .Quit
 	End With
+
+	' Revert the changes made to the "ThisUserform" frx file.
+	Call vWScriptShell.Run("git checkout -q -- " & vFileSystemObject.BuildPath(vBootstrapFolderPath, "ThisUserForm.frx"), 0, False)
 End Sub
 
 Sub CreateExecuteScript( _

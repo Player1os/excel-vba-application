@@ -7,7 +7,7 @@ Const vMainWorkbookFilePassword = "ExcelVBAApplication"
 ' Declare local variables.
 Dim vMainWorkbookFilePath
 
-' Determine the path to the project's directory.
+' Determine the path to the main workbook file.
 With CreateObject("Scripting.FileSystemObject")
 	vMainWorkbookFilePath = .BuildPath(.GetParentFolderName(WScript.ScriptFullName), "App.xlsm")
 End With
