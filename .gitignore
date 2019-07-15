@@ -10,8 +10,9 @@ Test.xlsm
 !Script/Execute.vbs
 
 # Runtime and deploy configuration files.
-Deploy.txt
 Config.xml
+Deploy.txt
 
-# Error log file.
+# Output and error log files.
 Error.log
+Output.log

@@ -11,6 +11,8 @@ Set vWScriptShell = CreateObject("WScript.Shell")
 Set vFileSystemObject = CreateObject("Scripting.FileSystemObject")
 
 ' Define external object constants.
+Const adTypeText = 2
+Const adTypeBinary = 1
 Const fsoForReading = 1
 Const vbext_ct_StdModule = 1
 Const vbext_ct_ClassModule = 2
@@ -332,7 +334,27 @@ End Function
 Function GetMainWorkbookFilePassword( _
 	vBuildConfiguration _
 )
-	GetMainWorkbookFilePassword = vBuildConfiguration("ProjectName")
+	' Declare local variable.
+	Dim vBase64Node
+
+	' Prepare a base64 XML node.
+	Set vBase64Node = CreateObject("Msxml2.DOMDocument.3.0").createElement("base64")
+	vBase64Node.dataType = "bin.base64"
+
+	' Use the stream api to encode the project's name
+	With CreateObject("ADODB.Stream")
+		.Type = adTypeText
+		.CharSet = "us-ascii"
+		Call .Open
+		Call .WriteText("Pass^" & vBuildConfiguration("ProjectName") & "$ssaP")
+		.Position = 0
+		.Type = adTypeBinary
+		.Position = 0
+		vBase64Node.nodeTypedValue = .Read
+	End With
+
+	' Return the processed string result.
+	GetMainWorkbookFilePassword = vBase64Node.text
 End Function
 
 Sub CreateMainWorkbook( _
@@ -392,6 +414,9 @@ Sub CreateMainWorkbook( _
 					Call .References.AddFromGuid(vReferenceItem("GUID"), vReferenceItem("Major"), vReferenceItem("Minor"))
 				Next
 
+				' Import the "Runtime" component.
+				Call .VBComponents.Import(vFileSystemObject.BuildPath(vBootstrapFolder.Path, "Runtime.bas"))
+
 				' Import the "ThisUserForm" component from a file.
 				Call .VBComponents.Import(vFileSystemObject.BuildPath(vBootstrapFolder.Path, "ThisUserForm.frm"))
 				Call .VBComponents("ThisUserForm").CodeModule.DeleteLines(1, 1)
@@ -413,8 +438,9 @@ Sub CreateMainWorkbook( _
 				Next
 			End With
 
-			' Assign a shortcut key to the initialize macro.
+			' Assign a shortcut key to the initialize macros.
 			Call .Application.MacroOptions("ThisWorkbook.Initialize", , , , True, "q")
+			Call .Application.MacroOptions("ThisWorkbook.InitializeWithPath", , , , True, "Q")
 
 			' Save and password protect the main workbook file path.
 			Call .SaveAs(vMainWorkbookFilePath, xlOpenXMLWorkbookMacroEnabled, GetMainWorkbookFilePassword(vBuildConfiguration))
@@ -435,8 +461,12 @@ Sub FormatExportedModuleFile( _
 	' Read the file content.
 	vContent = ReadTextFile(vFilePath)
 
-	' Make sure the file ends with a newline sequence.
-	If Right(vContent, 2) <> vbCrLf Then
+	' Make sure the file ends with one newline sequence.
+	If Right(vContent, 2) = vbCrLf Then
+		Do While Right(vContent, 4) = (vbCrLf & vbCrLf)
+			vContent = Left(vContent, Len(vContent) - 2)
+		Loop
+	Else
 		vContent = vContent & vbCrLf
 	End If
 
@@ -499,7 +529,10 @@ Sub ExportMainWorkbookModules( _
 				For Each vVBComponent In .VBComponents
 					With vVBComponent
 						' Determine the module file's directory path.
-						If .Name = "ThisUserForm" Then
+						If _
+							(.Name = "ThisUserForm") _
+							Or (.Name = "Runtime") _
+						Then
 							vModuleFileDirectoryPath = vBootstrapFolderPath
 						ElseIf Left(.Name, 3) = "Lib" Then
 							vModuleFileDirectoryPath = vLibraryFolderPath

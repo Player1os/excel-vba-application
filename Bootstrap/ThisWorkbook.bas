@@ -1,12 +1,14 @@
 Option Explicit
 
-Private Function pIsDebugModeEnabled()
-    pIsDebugModeEnabled = VBA.Environ$("APP_IS_DEBUG_MODE_ENABLED") = "TRUE"
-End Function
-
 Private Sub pInitialize()
-    ' Configure the excel application instance to run in speed mode.
+    ' Load the current excel application instance.
     With Application
+        ' Set the title and icon of the window.
+        .ActiveWindow.Caption = vbNullString
+        .Caption = Runtime.ProjectName()
+        Call Runtime.SetActiveWindowIcon
+
+        ' Configure to run in speed mode.
         .Calculation = xlCalculationManual
         .DisplayAlerts = False
         .ScreenUpdating = False
@@ -19,7 +21,7 @@ End Sub
 
 Private Sub Workbook_Open()
     ' If the application is in debug mode, do not continue.
-    If pIsDebugModeEnabled() Then
+    If Runtime.IsDebugModeEnabled() Then
         Exit Sub
     End If
 
@@ -32,9 +34,22 @@ End Sub
 
 Public Sub Initialize()
     ' If the application is not in debug mode, do not continue.
-    If Not pIsDebugModeEnabled() Then
+    If Not Runtime.IsDebugModeEnabled() Then
         Exit Sub
     End If
+
+    ' Initialize the application.
+    Call pInitialize
+End Sub
+
+Public Sub InitializeWithPath()
+    ' If the application is not in debug mode, do not continue.
+    If Not Runtime.IsDebugModeEnabled() Then
+        Exit Sub
+    End If
+
+    ' Set the navigate path environment variable.
+    Runtime.WScriptShell().Environment("PROCESS")("APP_NAVIGATE_PATH") = InputBox("Enter the path to navigate to")
 
     ' Initialize the application.
     Call pInitialize
