@@ -86,7 +86,7 @@ Function Base64Encode(sText)
     Set oXML = CreateObject("Msxml2.DOMDocument.3.0")
     Set oNode = oXML.CreateElement("base64")
     oNode.dataType = "bin.base64"
-    oNode.nodeTypedValue =Stream_StringToBinary(sText)
+    oNode.nodeTypedValue = Stream_StringToBinary(sText)
     Base64Encode = oNode.text
     Set oNode = Nothing
     Set oXML = Nothing

@@ -26,7 +26,7 @@ End Function
 
 Public Function Add( _
     ByRef vValue As Variant _
-) As CUtilitySet
+) As LibClsSet
     ' Verify that the value does not already exist in the set.
     If Not Exists(vValue) Then
         ' Add to the underlying dictionary.
@@ -39,7 +39,7 @@ End Function
 
 Public Function Remove( _
     ByRef vValue As Variant _
-) As CUtilitySet
+) As LibClsSet
     ' Remove from the underlying dictionary.
     Call vDictionary.Remove(vValue)
 
