@@ -12,11 +12,11 @@ Set vFileSystemObject = CreateObject("Scripting.FileSystemObject")
 
 ' Define external object constants.
 Const fsoForReading = 1
-Const xlOpenXMLWorkbookMacroEnabled = 52
-Const xlMaximized = -4137
 Const vbext_ct_StdModule = 1
 Const vbext_ct_ClassModule = 2
 Const vbext_ct_MSForm = 3
+Const xlMaximized = -4137
+Const xlOpenXMLWorkbookMacroEnabled = 52
 
 ' Define internal class constants.
 Const vClsListInitialArraySize = 32
@@ -552,10 +552,13 @@ Sub CreateExecuteScript( _
 
 		' Set project specific constants.
 		vTextFileContent = Replace(vTextFileContent, _
+			"Const vProjectName = """"", _
+			"Const vProjectName = """ & vBuildConfiguration("ProjectName") & """")
+		vTextFileContent = Replace(vTextFileContent, _
 			"Const vIsBackgroundModeEnabled = False", _
 			"Const vIsBackgroundModeEnabled = " & CStr(vBuildConfiguration("IsBackgroundModeEnabled")))
 		vTextFileContent = Replace(vTextFileContent, _
-			"Const vMainWorkbookFilePassword = ""ExcelVBAApplication""", _
+			"Const vMainWorkbookFilePassword = """"", _
 			"Const vMainWorkbookFilePassword = """ & GetMainWorkbookFilePassword(vBuildConfiguration) & """")
 
 		' Create the execute script file.

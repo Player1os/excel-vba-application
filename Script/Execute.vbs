@@ -1,16 +1,24 @@
 Option Explicit
 
 ' Define the project parameter constants.
+Const vProjectName = ""
 Const vIsBackgroundModeEnabled = False
-Const vMainWorkbookFilePassword = "ExcelVBAApplication"
+Const vMainWorkbookFilePassword = ""
 
 ' Declare local variables.
+Dim vWScriptShell
 Dim vMainWorkbookFilePath
+
+' Initialize the wscript shell external object.
+Set vWScriptShell = CreateObject("WScript.Shell")
 
 ' Determine the path to the main workbook file.
 With CreateObject("Scripting.FileSystemObject")
 	vMainWorkbookFilePath = .BuildPath(.GetParentFolderName(WScript.ScriptFullName), "App.xlsm")
 End With
+
+' Write the project name to an environment variable.
+vWScriptShell.Environment("PROCESS")("APP_PROJECT_NAME") = vProjectName
 
 ' Inialize a backup instance of the Excel application for other workbooks to use.
 With CreateObject("Excel.Application")
@@ -20,7 +28,7 @@ With CreateObject("Excel.Application")
 		If Not vIsBackgroundModeEnabled Then
 			' Make the application window visible and bring it to the forefront
 			.Visible = True
-			Call CreateObject("WScript.Shell").AppActivate(.Caption)
+			Call vWScriptShell.AppActivate(.Caption)
 		End If
 
 		' Open the main workbook file in read-only mode with the prepared password.

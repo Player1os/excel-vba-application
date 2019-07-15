@@ -18,8 +18,14 @@ End If
 ' Load the build configuration from the build configuration xml document.
 Set vBuildConfiguration = LoadBuildConfiguration(vFileSystemObject.BuildPath(vProjectDirectoryPath, "Build.xml"))
 
-' Set the environment variable, that indicates that the project is to be run in debug mode.
-vWScriptShell.Environment("PROCESS")("APP_IS_DEBUG_MODE_ENABLED") = "TRUE"
+' Set the required environment variables.
+With vWScriptShell.Environment("PROCESS")
+	' Indicates that the project is to be run in debug mode.
+	.Item("APP_IS_DEBUG_MODE_ENABLED") = "TRUE"
+	' Stores the project name.
+	.Item("APP_PROJECT_NAME") = vBuildConfiguration("ProjectName")
+End With
+
 
 ' Inialize a backup instance of the Excel application for other workbooks to use.
 With CreateObject("Excel.Application")
@@ -30,5 +36,10 @@ With CreateObject("Excel.Application")
 
 		' Open the main workbook file the prepared password.
 		Call .Workbooks.Open(GetMainWorkbookFilePath(vDeployDirectoryPath), , True, , GetMainWorkbookFilePassword(vBuildConfiguration))
+
+		' Wait for the main workbook to be closed.
+		Do While IsMainWorkbookOpen(vDeployDirectoryPath)
+			Call WScript.Sleep(1000)
+		Loop
 	End With
 End With

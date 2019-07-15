@@ -22,8 +22,13 @@ Call CreateMainWorkbook(vProjectDirectoryPath, vBuildConfiguration)
 ' Create the execute script.
 Call CreateExecuteScript(vProjectDirectoryPath, vBuildConfiguration)
 
-' Set the environment variable, that indicates that the project is to be run in debug mode.
-vWScriptShell.Environment("PROCESS")("APP_IS_DEBUG_MODE_ENABLED") = "TRUE"
+' Set the required environment variables.
+With vWScriptShell.Environment("PROCESS")
+	' Indicates that the project is to be run in debug mode.
+	.Item("APP_IS_DEBUG_MODE_ENABLED") = "TRUE"
+	' Stores the project name.
+	.Item("APP_PROJECT_NAME") = vBuildConfiguration("ProjectName")
+End With
 
 ' Inialize a backup instance of the Excel application for other workbooks to use.
 With CreateObject("Excel.Application")
