@@ -535,7 +535,7 @@ Sub ExportMainWorkbookModules( _
 	End With
 
 	' Revert the changes made to the "ThisUserform" frx file.
-	Call vWScriptShell.Run("git checkout -q -- " & vFileSystemObject.BuildPath(vBootstrapFolderPath, "ThisUserForm.frx"), 0, False)
+	Call vWScriptShell.Run("git checkout -q -- " & vFileSystemObject.BuildPath(vBootstrapFolderPath, "ThisUserForm.frx"), 0, True)
 End Sub
 
 Sub CreateExecuteScript( _
