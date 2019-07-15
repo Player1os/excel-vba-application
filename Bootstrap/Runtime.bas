@@ -2,6 +2,8 @@ Attribute VB_Name = "Runtime"
 Option Explicit
 Option Private Module
 
+' Requires ModController.
+
 Private Declare Function GetActiveWindow Lib "user32" () As Integer
 
 Private Declare Function ExtractIconA Lib "shell32.dll" ( _
@@ -43,8 +45,6 @@ Private Const vSwShowMaximized As Long = 3
 Private vFileSystemObject As FileSystemObject
 Private vWScriptShell As Object
 
-Private vNavigatePath As String
-
 Public Function FileSystemObject() As FileSystemObject
     ' Initialize the file system object for use across the project, if needed.
     If vFileSystemObject Is Nothing Then
@@ -63,6 +63,14 @@ End Function
 
 Public Function IsDebugModeEnabled() As Boolean
     IsDebugModeEnabled = WScriptShell().Environment("PROCESS")("APP_IS_DEBUG_MODE_ENABLED") = "TRUE"
+End Function
+
+Public Function IsDeployDebugModeEnabled() As Boolean
+    IsDeployDebugModeEnabled = WScriptShell().Environment("PROCESS")("APP_IS_DEPLOY_DEBUG_MODE_ENABLED") = "TRUE"
+End Function
+
+Public Function IsBackgroundModeEnabled() As Boolean
+    IsBackgroundModeEnabled = WScriptShell().Environment("PROCESS")("APP_IS_BACKGROUND_MODE_ENABLED") = "TRUE"
 End Function
 
 Public Function ProjectName() As String
@@ -109,4 +117,35 @@ End Sub
 
 Public Sub MaximizeActiveWindow()
     Call ShowWindow(GetActiveWindow(), vSwShowMaximized)
+End Sub
+
+Public Sub Navigate( _
+    ByRef vNavigatePath As String _
+)
+    ' Declare local variables.
+    Dim vPath As String
+    Dim vParametersPortionIndex As Long
+    Dim vParameterEntry As Variant
+    Dim vParsedParameterEntry() As String
+    Dim vParameters As New Dictionary
+
+    ' Define the navigate path as the first version of the path.
+    vPath = vNavigatePath
+
+    ' Extract the query parameters if available.
+    vParametersPortionIndex = InStr(vPath, "?")
+    If vParametersPortionIndex <> 0 Then
+        For Each vParameterEntry In Split(Mid(vPath, vParametersPortionIndex + 1), "&")
+            vParsedParameterEntry = Split(vParameterEntry, "=")
+            If UBound(vParsedParameterEntry) = 0 Then
+                ReDim Preserve vParsedParameterEntry(0 To 1)
+                vParsedParameterEntry(1) = vbNullString
+            End If
+            Call vParameters.Add(vParsedParameterEntry(0), vParsedParameterEntry(1))
+        Next
+        vPath = Left(vPath, vParametersPortionIndex - 1)
+    End If
+
+    ' Pass the path and parameters to the user defined controller.
+    Call ModController.Navigate(vPath, vParameters)
 End Sub

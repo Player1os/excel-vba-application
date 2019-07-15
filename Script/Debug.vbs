@@ -22,8 +22,14 @@ Set vBuildConfiguration = LoadBuildConfiguration(vFileSystemObject.BuildPath(vPr
 With vWScriptShell.Environment("PROCESS")
 	' Indicates that the project is to be run in debug mode.
 	.Item("APP_IS_DEBUG_MODE_ENABLED") = "TRUE"
+	' Indicates that the project is to be run in background mode.
+	If vBuildConfiguration("IsBackgroundModeEnabled") Then
+		.Item("APP_IS_BACKGROUND_MODE_ENABLED") = "TRUE"
+	End If
+	' Indicates that the project is to be run in deploy debug mode.
+	.Item("APP_IS_DEPLOY_DEBUG_MODE_ENABLED") = "TRUE"
 	' Stores the project name.
-	.Item("APP_PROJECT_NAME") = vBuildConfiguration("ProjectName")
+	.Item("APP_PROJECT_NAME") = "[Debug] " & vBuildConfiguration("ProjectName")
 End With
 
 
@@ -38,7 +44,7 @@ With CreateObject("Excel.Application")
 		Call .Workbooks.Open(GetMainWorkbookFilePath(vDeployDirectoryPath), , True, , GetMainWorkbookFilePassword(vBuildConfiguration))
 
 		' Wait for the main workbook to be closed.
-		Do While IsMainWorkbookOpen(vDeployDirectoryPath)
+		Do While .Workbooks.Count > 0
 			Call WScript.Sleep(1000)
 		Loop
 	End With

@@ -17,8 +17,15 @@ With CreateObject("Scripting.FileSystemObject")
 	vMainWorkbookFilePath = .BuildPath(.GetParentFolderName(WScript.ScriptFullName), "App.xlsm")
 End With
 
-' Write the project name to an environment variable.
-vWScriptShell.Environment("PROCESS")("APP_PROJECT_NAME") = vProjectName
+' Set the required environment variables.
+With vWScriptShell.Environment("PROCESS")
+	' Indicates that the project is to be run in background mode.
+	If vIsBackgroundModeEnabled Then
+		.Item("APP_IS_BACKGROUND_MODE_ENABLED") = "TRUE"
+	End If
+	' Stores the project name.
+	.Item("APP_PROJECT_NAME") = vProjectName
+End With
 
 ' Inialize a backup instance of the Excel application for other workbooks to use.
 With CreateObject("Excel.Application")

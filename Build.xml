@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <build>
-	<project-name>ExcelVBAApplication</project-name>
+	<project-name>Excel VBA Application</project-name>
 	<is-background-mode-enabled>False</is-background-mode-enabled>
 	<required-references>
 		<item>

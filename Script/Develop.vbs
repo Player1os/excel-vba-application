@@ -26,8 +26,12 @@ Call CreateExecuteScript(vProjectDirectoryPath, vBuildConfiguration)
 With vWScriptShell.Environment("PROCESS")
 	' Indicates that the project is to be run in debug mode.
 	.Item("APP_IS_DEBUG_MODE_ENABLED") = "TRUE"
+	' Indicates that the project is to be run in background mode.
+	If vBuildConfiguration("IsBackgroundModeEnabled") Then
+		.Item("APP_IS_BACKGROUND_MODE_ENABLED") = "TRUE"
+	End If
 	' Stores the project name.
-	.Item("APP_PROJECT_NAME") = vBuildConfiguration("ProjectName")
+	.Item("APP_PROJECT_NAME") = "[Develop] " & vBuildConfiguration("ProjectName")
 End With
 
 ' Inialize a backup instance of the Excel application for other workbooks to use.
@@ -39,12 +43,12 @@ With CreateObject("Excel.Application")
 
 		' Open the main workbook file the prepared password.
 		Call .Workbooks.Open(GetMainWorkbookFilePath(vProjectDirectoryPath), , , , GetMainWorkbookFilePassword(vBuildConfiguration))
-	End With
 
-	' Wait for the main workbook to be closed.
-	Do While IsMainWorkbookOpen(vProjectDirectoryPath)
-		Call WScript.Sleep(1000)
-	Loop
+		' Wait for the main workbook to be closed.
+		Do While .Workbooks.Count > 0
+			Call WScript.Sleep(1000)
+		Loop
+	End With
 
 	' Export the project main workbook's modules.
 	Call ExportMainWorkbookModules(vProjectDirectoryPath, vBuildConfiguration)

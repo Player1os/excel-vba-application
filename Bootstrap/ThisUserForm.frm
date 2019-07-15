@@ -15,6 +15,8 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Option Explicit
 
+' Requires Runtime
+
 Private vOriginalApplicationLeft As Long
 Private vOriginalApplicationTop As Long
 Private vOriginalApplicationWidth As Long
@@ -26,9 +28,6 @@ Private Const vApplicationPadding As Long = 50
 Private Const vWebBrowserPadding As Long = 4
 
 Private Sub UserForm_Activate()
-    ' Declare local variables.
-    Dim vNavigatePath As String
-
     ' Set the title and icon of the current window.
     Caption = Runtime.ProjectName()
     Call Runtime.SetActiveWindowIcon
@@ -100,32 +99,8 @@ Private Sub ThisWebBrowser_DocumentComplete( _
     ByVal pDisp As Object, _
     URL As Variant _
 )
-    ' Declare local variables.
-    Dim vPath As String
-    Dim vParametersPortionIndex As Long
-    Dim vParameterEntry As Variant
-    Dim vParsedParameterEntry() As String
-    Dim vParameters As New Dictionary
-
     ' Extract the fragment portion of the original url.
-    vPath = Right(URL, Len(URL) - InStr(URL, "#"))
-
-    ' Extract the query parameters if available.
-    vParametersPortionIndex = InStr(vPath, "?")
-    If vParametersPortionIndex <> 0 Then
-        For Each vParameterEntry In Split(Mid(vPath, vParametersPortionIndex + 1), "&")
-            vParsedParameterEntry = Split(vParameterEntry, "=")
-            If UBound(vParsedParameterEntry) = 0 Then
-                ReDim Preserve vParsedParameterEntry(0 To 1)
-                vParsedParameterEntry(1) = vbNullString
-            End If
-            Call vParameters.Add(vParsedParameterEntry(0), vParsedParameterEntry(1))
-        Next
-        vPath = Left(vPath, vParametersPortionIndex - 1)
-    End If
-
-    ' Pass the path and parameters to the user defined controller.
-    Call ModController.Navigate(vPath, vParameters)
+    Call Runtime.Navigate(Right(URL, Len(URL) - InStr(URL, "#")))
 End Sub
 
 Public Sub SetInnerHtml( _
@@ -133,4 +108,3 @@ Public Sub SetInnerHtml( _
 )
     ThisWebBrowser.Document.body.innerHtml = vHtmlText
 End Sub
-
