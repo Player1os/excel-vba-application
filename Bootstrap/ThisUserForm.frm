@@ -17,13 +17,6 @@ Option Explicit
 
 ' Requires Runtime
 
-Private vOriginalApplicationLeft As Long
-Private vOriginalApplicationTop As Long
-Private vOriginalApplicationWidth As Long
-Private vOriginalApplicationHeight As Long
-
-Private Const vMinimumApplicationWidth As Long = 104
-Private Const vMinimumApplicationHeight As Long = 30
 Private Const vApplicationPadding As Long = 50
 Private Const vWebBrowserPadding As Long = 4
 
@@ -37,35 +30,7 @@ Private Sub UserForm_Activate()
     Call Runtime.MaximizeActiveWindow
 
     ' Load the main HTML file as the basis of the pages to be displayed in the embedded web browser.
-    With Runtime.FileSystemObject()
-        Call ThisWebBrowser.Navigate(.BuildPath(.BuildPath(ThisWorkbook.Path, "Assets"), "Main.html") & "#" & Runtime.NavigatePath())
-    End With
-End Sub
-
-Private Sub UserForm_Initialize()
-    ' Load the excel application instance.
-    With Application
-        ' Store the original dimensions.
-        vOriginalApplicationLeft = .Left
-        vOriginalApplicationTop = .Top
-        vOriginalApplicationWidth = .Width
-        vOriginalApplicationHeight = .Height
-
-        ' Shrink the application window.
-        .Width = vMinimumApplicationWidth
-        .Height = vMinimumApplicationHeight
-    End With
-End Sub
-
-Private Sub UserForm_Terminate()
-    ' Load the excel application instance.
-    With Application
-        ' Restore the original dimensions.
-        .Left = vOriginalApplicationLeft
-        .Top = vOriginalApplicationTop
-        .Width = vOriginalApplicationWidth
-        .Height = vOriginalApplicationHeight
-    End With
+    Call ThisWebBrowser.Navigate(Runtime.BaseHtmlFilePath() & "#" & Runtime.NavigatePath())
 End Sub
 
 Private Sub UserForm_Layout()
@@ -82,9 +47,17 @@ Private Sub UserForm_Layout()
         End If
 
         ' Move the application window to the center of the user form.
-        .Left = Me.Left + (Width - .Width) / 2
-        .Top = Me.Top + (Height - .Height) / 2
+        .Left = Left + (Width - .Width) / 2
+        .Top = Top + (Height - .Height) / 2
     End With
+End Sub
+
+Private Sub UserForm_QueryClose( _
+    Cancel As Integer, _
+    CloseMode As Integer _
+)
+    Call Runtime.Navigate("close")
+    Call Hide
 End Sub
 
 Private Sub UserForm_Resize()
@@ -103,8 +76,15 @@ Private Sub ThisWebBrowser_DocumentComplete( _
     Call Runtime.Navigate(Right(URL, Len(URL) - InStr(URL, "#")))
 End Sub
 
-Public Sub SetInnerHtml( _
+Public Sub Navigate( _
+    vNavigatePath As String _
+)
+    Call ThisWebBrowser.Navigate(Runtime.BaseHtmlFilePath() & "?" & CStr(CDbl(Now)) & "#" & vNavigatePath)
+End Sub
+
+Public Sub InnerHtml( _
     vHtmlText As String _
 )
-    ThisWebBrowser.Document.body.innerHtml = vHtmlText
+    ThisWebBrowser.Document.body.InnerHtml = vHtmlText
+    DoEvents
 End Sub

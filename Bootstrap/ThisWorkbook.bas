@@ -2,8 +2,14 @@ Option Explicit
 
 ' Requires Runtime
 
+Private Const vMinimumWidth As Long = 110
+Private Const vMinimumHeight As Long = 30
+
 Private Const vDefaultWidth As Long = 800
 Private Const vDefaultHeight As Long = 400
+
+Private vOriginalLeft As Long
+Private vOriginalTop As Long
 
 Private Sub pInitialize()
     ' Check whether the application is running in background mode.
@@ -11,8 +17,32 @@ Private Sub pInitialize()
         ' Execute the default navigate path.
         Call Runtime.Navigate(Runtime.NavigatePath())
     Else
-        ' Show the main user form.
-        Call ThisUserForm.Show
+        ' Load the excel application instance.
+        With Application
+            ' Store the original dimensions.
+            vOriginalLeft = .Left
+            vOriginalTop = .Top
+
+            ' Shrink the application window.
+            .Width = vMinimumWidth
+            .Height = vMinimumHeight
+
+            ' Show the main user form.
+            Call ThisUserForm.Show
+
+            ' Prevent the flickering of the application window, if it is to be closed.
+            If Not Runtime.IsDebugModeEnabled() Then
+                .Visible = False
+            End If
+
+            ' Restore the original dimensions.
+            .Left = vOriginalLeft
+            .Top = vOriginalTop
+
+            ' Set the dimensions of the window.
+            .Width = vDefaultWidth
+            .Height = vDefaultHeight
+        End With
     End If
 End Sub
 
@@ -32,7 +62,7 @@ Private Sub Workbook_Open()
     With Application
         ' Check whether the application is visible.
         If .Visible Then
-            ' Reset the dimensions.
+            ' Set the dimensions of the window.
             .Width = vDefaultWidth
             .Height = vDefaultHeight
 

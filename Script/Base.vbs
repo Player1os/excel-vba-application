@@ -561,6 +561,9 @@ Sub ExportMainWorkbookModules( _
 					End With
 				Next
 			End With
+
+			' Configure the workbook to ignore changes made.
+			.Saved = True
 		End With
 
 		' Close the excel application instance.
