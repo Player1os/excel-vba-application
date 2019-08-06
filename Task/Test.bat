@@ -6,4 +6,4 @@ setlocal enableextensions
 cd %~dp0..\..
 
 :: Load the corresponding vbscript with the base script.
-call .\Script\_Base.vbs .\Script\Test.vbs
+cscript /NoLogo .\Script\_Base.vbs .\Script\Test.vbs
