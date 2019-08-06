@@ -601,7 +601,7 @@ Sub CreateExecuteScript( _
 	' Load the file system object.
 	With vFileSystemObject
 		' Load the contents of the execute script template.
-		vTextFileContent = ReadTextFile(.BuildPath(.BuildPath(vProjectDirectoryPath, "Script"), "Execute.vbs"))
+		vTextFileContent = ReadTextFile(.BuildPath(.BuildPath(vProjectDirectoryPath, "Script"), "_Execute.vbs"))
 
 		' Set project specific constants.
 		vTextFileContent = Replace(vTextFileContent, _
