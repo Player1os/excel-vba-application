@@ -13,13 +13,13 @@ vProjectDirectoryPath = GetLocalProjectDirectoryPath()
 vDeployDirectoryPath = LoadDeployDirectoryPath(vProjectDirectoryPath)
 If vDeployDirectoryPath = vbNullString Then
 	Call MsgBox("Cannot find the 'Deploy.txt' file in the project directory containing a valid directory path.", vbExclamation)
-	Call WScript.Quit
+	Call WScript.Quit()
 End If
 
 ' If the main workbook is already open, notify the user and exit.
 If IsMainWorkbookOpen(vProjectDirectoryPath) Then
 	Call MsgBox("The main workbook is already open in a different process and must be closed before proceeding.", vbExclamation)
-	Call WScript.Quit
+	Call WScript.Quit()
 End If
 
 ' Load the build configuration from the build configuration xml document.

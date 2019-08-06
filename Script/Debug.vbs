@@ -12,7 +12,7 @@ vProjectDirectoryPath = GetLocalProjectDirectoryPath()
 vDeployDirectoryPath = LoadDeployDirectoryPath(vProjectDirectoryPath)
 If vDeployDirectoryPath = vbNullString Then
 	Call MsgBox("Cannot find the 'Deploy.txt' file in the project directory containing a valid directory path.", vbExclamation)
-	Call WScript.Quit
+	Call WScript.Quit()
 End If
 
 ' Load the build configuration from the build configuration xml document.
