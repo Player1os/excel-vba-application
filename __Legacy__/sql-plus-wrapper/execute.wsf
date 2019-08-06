@@ -1,4 +1,0 @@
-<job id="IncludeExample">
-	<script language="VBScript" src="utility.vbs" />
-	<script language="VBScript" src="execute.vbs" />
-</job>
