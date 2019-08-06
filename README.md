@@ -31,3 +31,4 @@ The contained modules and classes require the VBA project to have references to 
 >> TODO: Add IDE Options (color, syntax check, tabs, error handling method, ...)
 >> TODO: Add the enabling of VBIDE calls
 >> TODO: Assume the presence of Outlook, Internet Explorer, ...
+>> TODO: How to enable / disable library test modules (physical removal is a possibility)

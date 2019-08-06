@@ -365,6 +365,7 @@ Sub CreateMainWorkbook( _
 	Dim vBootstrapFolder
 	Dim vLibraryFolder
 	Dim vSourceFolder
+	Dim vTestFolder
 	Dim vMainWorkbookFilePath
 	Dim vReferenceItem
 	Dim vModuleFile
@@ -372,10 +373,11 @@ Sub CreateMainWorkbook( _
 
 	' Load the file system object.
 	With vFileSystemObject
-		' Load the bootstrap, library and source folder objects.
+		' Load the bootstrap, library, source and test folder objects.
 		Set vBootstrapFolder = .GetFolder(.BuildPath(vProjectDirectoryPath, "Bootstrap"))
 		Set vLibraryFolder = .GetFolder(.BuildPath(vProjectDirectoryPath, "Library"))
 		Set vSourceFolder = .GetFolder(.BuildPath(vProjectDirectoryPath, "Source"))
+		Set vTestFolder = .GetFolder(.BuildPath(vProjectDirectoryPath, "Test"))
 
 		' Determine the main workbook file path.
 		vMainWorkbookFilePath = GetMainWorkbookFilePath(vProjectDirectoryPath)
@@ -389,6 +391,7 @@ Sub CreateMainWorkbook( _
 					(GetFolderDateLastModified(vBootstrapFolder) < .DateLastModified) _
 					And (GetFolderDateLastModified(vLibraryFolder) < .DateLastModified) _
 					And (GetFolderDateLastModified(vSourceFolder) < .DateLastModified) _
+					And (GetFolderDateLastModified(vTestFolder) < .DateLastModified) _
 					And (vFileSystemObject.GetFile(WScript.ScriptFullName).DateLastModified < .DateLastModified) _
 				) Then
 					Exit Sub
@@ -436,11 +439,16 @@ Sub CreateMainWorkbook( _
 				For Each vModuleFile In vSourceFolder.Files
 					Call .VBComponents.Import(vModuleFile.Path)
 				Next
+
+				' Import the test modules.
+				For Each vModuleFile In vTestFolder.Files
+					Call .VBComponents.Import(vModuleFile.Path)
+				Next
 			End With
 
 			' Assign a shortcut key to the initialize macros.
 			Call .Application.MacroOptions("ThisWorkbook.Initialize", , , , True, "q")
-			Call .Application.MacroOptions("ThisWorkbook.InitializeWithPath", , , , True, "Q")
+			Call .Application.MacroOptions("ThisWorkbook.Test", , , , True, "Q")
 
 			' Save and password protect the main workbook file path.
 			Call .SaveAs(vMainWorkbookFilePath, xlOpenXMLWorkbookMacroEnabled, GetMainWorkbookFilePassword(vBuildConfiguration))
@@ -488,6 +496,7 @@ Sub ExportMainWorkbookModules( _
 	Dim vBootstrapFolderPath
 	Dim vLibraryFolderPath
 	Dim vSourceFolderPath
+	Dim vTestFolderPath
 	Dim vModuleFile
 	Dim vModuleFilePath
 	Dim vVBComponent
@@ -496,13 +505,19 @@ Sub ExportMainWorkbookModules( _
 
 	' Load the file system object.
 	With vFileSystemObject
-		' Load the bootstrap, library and source folder objects.
+		' Determine the bootstrap, library, source and test folder paths.
 		vBootstrapFolderPath = .BuildPath(vProjectDirectoryPath, "Bootstrap")
 		vLibraryFolderPath = .BuildPath(vProjectDirectoryPath, "Library")
 		vSourceFolderPath = .BuildPath(vProjectDirectoryPath, "Source")
+		vTestFolderPath = .BuildPath(vProjectDirectoryPath, "Test")
 
 		' Remove all of the old source module files.
 		For Each vModuleFile In .GetFolder(vSourceFolderPath).Files
+			Call vModuleFile.Delete
+		Next
+
+		' Remove all of the old test module files.
+		For Each vModuleFile In .GetFolder(vTestFolderPath).Files
 			Call vModuleFile.Delete
 		Next
 	End With
@@ -536,6 +551,8 @@ Sub ExportMainWorkbookModules( _
 							vModuleFileDirectoryPath = vBootstrapFolderPath
 						ElseIf Left(.Name, 3) = "Lib" Then
 							vModuleFileDirectoryPath = vLibraryFolderPath
+						ElseIf Left(.Name, 4) = "Test" Then
+							vModuleFileDirectoryPath = vTestFolderPath
 						Else
 							vModuleFileDirectoryPath = vSourceFolderPath
 						End If

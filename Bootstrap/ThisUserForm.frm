@@ -29,8 +29,8 @@ Private Sub UserForm_Activate()
     Call Runtime.PopulateActiveWindowTitlebar
     Call Runtime.MaximizeActiveWindow
 
-    ' Load the main HTML file as the basis of the pages to be displayed in the embedded web browser.
-    Call ThisWebBrowser.Navigate(Runtime.BaseHtmlFilePath() & "#" & Runtime.NavigatePath())
+    ' Load the main HTML file as the basis of the pages to be displayed in the embedded web browser with the startup navigate path.
+    Call ThisWebBrowser.Navigate(Runtime.BaseHtmlFilePath() & "#" & Runtime.StartupNavigatePath())
 End Sub
 
 Private Sub UserForm_Layout()
@@ -56,7 +56,10 @@ Private Sub UserForm_QueryClose( _
     Cancel As Integer, _
     CloseMode As Integer _
 )
-    Call Runtime.Navigate("close")
+    If Runtime.StartupNavigatePath() <> Runtime.vTestNavigatePath Then
+        Call Runtime.Navigate(Runtime.vCloseNavigatePath)
+    End If
+
     Call Hide
 End Sub
 
@@ -72,8 +75,15 @@ Private Sub ThisWebBrowser_DocumentComplete( _
     ByVal pDisp As Object, _
     URL As Variant _
 )
-    ' Extract the fragment portion of the original url.
-    Call Runtime.Navigate(Right(URL, Len(URL) - InStr(URL, "#")))
+    If Runtime.StartupNavigatePath() = Runtime.vTestNavigatePath Then
+        If Runtime.IsDebugModeEnabled() Then
+            Call Runtime.ExecuteTests
+        Else
+            Call Hide
+        End If
+    Else
+        Call Runtime.Navigate(Right(URL, Len(URL) - InStr(URL, "#")))
+    End If
 End Sub
 
 Public Sub Navigate( _
@@ -82,7 +92,7 @@ Public Sub Navigate( _
     Call ThisWebBrowser.Navigate(Runtime.BaseHtmlFilePath() & "?" & CStr(CDbl(Now)) & "#" & vNavigatePath)
 End Sub
 
-Public Sub InnerHtml( _
+Public Sub SetInnerHtml( _
     vHtmlText As String _
 )
     ThisWebBrowser.Document.body.InnerHtml = vHtmlText

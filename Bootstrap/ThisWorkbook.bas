@@ -12,10 +12,13 @@ Private vOriginalLeft As Long
 Private vOriginalTop As Long
 
 Private Sub pInitialize()
-    ' Check whether the application is running in background mode.
-    If Runtime.IsBackgroundModeEnabled() Then
-        ' Execute the default navigate path.
-        Call Runtime.Navigate(Runtime.NavigatePath())
+    ' Check whether the application is running in background mode and not running tests.
+    If _
+        Runtime.IsBackgroundModeEnabled() _
+        And (Runtime.StartupNavigatePath() <> Runtime.vTestNavigatePath) _
+    Then
+        ' Execute the startup navigate path.
+        Call Runtime.Navigate(Runtime.StartupNavigatePath())
     Else
         ' Load the excel application instance.
         With Application
@@ -95,18 +98,21 @@ Public Sub Initialize()
         Exit Sub
     End If
 
+    ' Set the startup navigate path environment variable to user input.
+    Runtime.WScriptShell().Environment("PROCESS")("APP_STARTUP_NAVIGATE_PATH") = InputBox("Enter the path to navigate to")
+
     ' Initialize the application.
     Call pInitialize
 End Sub
 
-Public Sub InitializeWithPath()
+Public Sub Test()
     ' If the application is not in debug mode, do not continue.
     If Not Runtime.IsDebugModeEnabled() Then
         Exit Sub
     End If
 
-    ' Set the navigate path environment variable.
-    Runtime.WScriptShell().Environment("PROCESS")("APP_NAVIGATE_PATH") = InputBox("Enter the path to navigate to")
+    ' Set the startup navigate path environment variable to test.
+    Runtime.WScriptShell().Environment("PROCESS")("APP_STARTUP_NAVIGATE_PATH") = Runtime.vTestNavigatePath
 
     ' Initialize the application.
     Call pInitialize

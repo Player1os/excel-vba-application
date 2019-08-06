@@ -31,7 +31,7 @@ Public Sub Navigate( _
         End With
     Else
         ' Display the path and parameters on the loaded html page.
-        Call ThisUserForm.InnerHtml("<h1>Navigate</h1>" _
+        Call ThisUserForm.SetInnerHtml("<h1>Navigate</h1>" _
             & "<p><b>Date & Time</b>: <code>" & Format(Now, "yyyy-mm-dd Hh:Nn:Ss") & "</code></p>" _
             & "<p><b>User @ Computer</b>: <code>" & Runtime.Username() & "@" & Runtime.ComputerName() & "</code></p>" _
             & "<p><b>Navigate Path</b>: <code>" & Runtime.GenerateNavigatePath(vPath, vParameters) & "</code></p>")
@@ -73,7 +73,7 @@ Public Sub HandleError( _
         End With
     Else
         ' Display the path and parameters on the loaded html page.
-        Call ThisUserForm.InnerHtml("<h1>Handle Error</h1>" _
+        Call ThisUserForm.SetInnerHtml("<h1>Handle Error</h1>" _
             & "<p><b>Date & Time</b>: <code>" & Format(Now, "yyyy-mm-dd Hh:Nn:Ss") & "</code></p>" _
             & "<p><b>User @ Computer</b>: <code>" & Runtime.Username() & "@" & Runtime.ComputerName() & "</code></p>" _
             & "<p><b>Navigate Path</b>: <code>" & Runtime.GenerateNavigatePath(vPath, vParameters) & "</code></p>" _
@@ -86,6 +86,15 @@ Public Sub HandleError( _
     End If
 End Sub
 
+Public Sub ExecuteTestCase( _
+    ByRef vModuleName As String, _
+    ByRef vCaseName As String _
+)
+    Select Case vModuleName
+        Case Else
+            Call Runtime.RaiseUndefinedTestModuleHandler
+    End Select
+End Sub
 
 '''''''''''''''''''''''
 '                     '

@@ -44,6 +44,13 @@ Private Const vSwShowMaximized As Long = 3
 
 Private Const vDefaultErrorNumber As Long = 10000
 
+Public Const vTestNavigatePath As String = "test"
+Public Const vCloseNavigatePath As String = "close"
+
+Private Const vTestModuleNamePrefix As String = "Test"
+Private Const vTestCaseDeclarationPrefix As String = "Public Sub Case_"
+Private Const vTestCaseDeclarationSuffix As String = "()"
+
 Private vIsErrorStored As Boolean
 Private vIsErrorIntercepted As Boolean
 
@@ -87,8 +94,8 @@ Public Function ProjectName() As String
     ProjectName = WScriptShell().Environment("PROCESS")("APP_PROJECT_NAME")
 End Function
 
-Public Function NavigatePath() As String
-    NavigatePath = WScriptShell().Environment("PROCESS")("APP_NAVIGATE_PATH")
+Public Function StartupNavigatePath() As String
+    StartupNavigatePath = WScriptShell().Environment("PROCESS")("APP_STARTUP_NAVIGATE_PATH")
 End Function
 
 Public Function Username() As String
@@ -170,7 +177,7 @@ Public Sub RaiseError( _
     End If
 
     ' Raise the error with the correct number and description.
-    Call VBA.Err.Raise(vDefaultErrorNumber, vSource, vDescription)
+    Call Err.Raise(vDefaultErrorNumber, vSource, vDescription)
 End Sub
 
 Public Sub StoreError()
@@ -199,7 +206,7 @@ Public Sub ReRaiseError()
         vIsErrorStored = False
 
         ' ReRaise an error with the stored error parameters.
-        Call VBA.Err.Raise(vStoredErrorNumber, vStoredErrorSource, vStoredErrorDescription)
+        Call Err.Raise(vStoredErrorNumber, vStoredErrorSource, vStoredErrorDescription)
     End If
 End Sub
 
@@ -263,14 +270,14 @@ Public Sub Navigate( _
     Dim vPath As String
     Dim vParameters As Dictionary
 
-    ' Configure error handling.
-    On Error GoTo HandleError:
-
     ' Extract the query parameters if available.
     With ParseNavigatePath(vNavigatePath)
         vPath = .Item("Path")
         Set vParameters = .Item("Parameters")
     End With
+
+    ' Configure error handling.
+    On Error GoTo HandleError:
 
     ' Pass the path and parameters to the user defined controller.
     Call Controller.Navigate(vPath, vParameters)
@@ -314,4 +321,123 @@ HandleError:
 
     ' Terminate error handling.
     Resume Terminate:
+End Sub
+
+Public Sub ExecuteTests()
+    ' Declare local variables.
+    Dim vComponent As VBComponent
+    Dim vCodeLinePosition As Long
+    Dim vCodeLine As String
+    Dim vCaseName As String
+    Dim vProcedureBody As String
+    Dim vModuleReportHtml As String
+    Dim vModuleReportDots As String
+    Dim vModulePassedCaseCount As Long
+    Dim vModuleCaseCount As Long
+    Dim vReportHtml As String
+    Dim vReportDots As String
+    Dim vPassedCaseCount As Long
+    Dim vCaseCount As Long
+    Dim vStyleAttribute As String
+
+    ' Configure the error handler.
+    On Error GoTo HandleError:
+
+    ' Loop through all of the project's components.
+    For Each vComponent In ThisWorkbook.VBProject.VBComponents
+        ' Only work with test modules.
+        If Left(vComponent.Name, Len(vTestModuleNamePrefix)) = vTestModuleNamePrefix Then
+            ' Load the current component's code module.
+            With vComponent.CodeModule
+                ' Loop through each line of code.
+                vCodeLinePosition = 0
+                Do While vCodeLinePosition < .CountOfLines
+                    ' Load the current code line.
+                    vCodeLine = .Lines(vCodeLinePosition + 1, 1)
+
+                    ' Check for the presence of a test case declaration.
+                    If _
+                        (Len(vCodeLine) > Len(vTestCaseDeclarationPrefix & vTestCaseDeclarationSuffix)) _
+                        And (Left(vCodeLine, Len(vTestCaseDeclarationPrefix)) = vTestCaseDeclarationPrefix) _
+                        And (Right(vCodeLine, Len(vTestCaseDeclarationSuffix)) = vTestCaseDeclarationSuffix) _
+                    Then
+                        ' Determine the current test case name.
+                        vCaseName = Mid(vCodeLine, Len(vTestCaseDeclarationPrefix) + 1, _
+                            Len(vCodeLine) - Len(vTestCaseDeclarationPrefix & vTestCaseDeclarationSuffix))
+
+                        ' Increment the test case counter.
+                        vModuleCaseCount = vModuleCaseCount + 1
+
+                        ' Execute the current test case of the current test module (the placeholder is replaced during execution).
+                        Call Controller.ExecuteTestCase(CStr(vComponent.Name), CStr(vCaseName))
+
+                        ' Report the success of the current test case.
+                        vModuleReportHtml = vModuleReportHtml & "<li><span style=""color: green"">[PASS]</span> <b>" & CStr(vCaseName) & "</b></li>"
+                        vModuleReportDots = vModuleReportDots + "<span style=""color: green"">.</span>"
+                        vModulePassedCaseCount = vModulePassedCaseCount + 1
+EndTestCase:
+                    End If
+
+                    ' Increment the current code line position.
+                    vCodeLinePosition = vCodeLinePosition + 1
+                Loop
+            End With
+
+            ' Add a header to the report for the current test module.
+            If vModulePassedCaseCount = vModuleCaseCount Then
+                vStyleAttribute = "style=""color: green"""
+            Else
+                vStyleAttribute = "style=""color: red"""
+            End If
+            vModuleReportHtml = "<h2><span " & vStyleAttribute & ">(" & CStr(vModulePassedCaseCount) & " / " & CStr(vModuleCaseCount) & ")</span>" _
+                & " " & CStr(vComponent.Name) & "</h2><pre>" & vModuleReportDots & "</pre>" & vModuleReportHtml
+
+            ' Add the module's data to the overall result.
+            vReportHtml = vReportHtml & vModuleReportHtml
+            vModuleReportHtml = vbNullString
+            vReportDots = vReportDots & vModuleReportDots
+            vModuleReportDots = vbNullString
+            vPassedCaseCount = vPassedCaseCount + vModulePassedCaseCount
+            vModulePassedCaseCount = 0
+            vCaseCount = vCaseCount + vModuleCaseCount
+            vModuleCaseCount = 0
+        End If
+    Next
+
+    ' Add a header to the report and output it to be rendered before exiting.
+    If vPassedCaseCount = vCaseCount Then
+        vStyleAttribute = "style=""color: green"""
+    Else
+        vStyleAttribute = "style=""color: red"""
+    End If
+    Call ThisUserForm.SetInnerHtml("<div style=""width: 40em; margin: 0 auto; padding: 1em; background: lightgoldenrodyellow"">" _
+        & "<h1><span " & vStyleAttribute & ">(" & CStr(vPassedCaseCount) & " / " & CStr(vCaseCount) & ")</span>" _
+        & " Test</h1><pre>" & vReportDots & "</pre>" & vReportHtml & "<div>")
+    Exit Sub
+
+HandleError:
+    ' Report the failure of the current test case.
+    vModuleReportHtml = vModuleReportHtml & "<li><span style=""color: red"">[FAIL]</span> <b>" & CStr(vCaseName) & "</b>" _
+        & "<p style=""background: lightcoral; padding: 0.2em""><b>" & Err.Source & "</b><br />" & Replace(Err.Description, vbCrLf, "<br />") & "</p>"
+    vModuleReportDots = vModuleReportDots + "<span style=""color: red"">X</span>"
+
+    ' Transfer control to the end of the current test case.
+    Resume EndTestCase:
+End Sub
+
+Public Sub Assert( _
+    ByVal vValue As Boolean, _
+    Optional ByRef vComment As String = "Undefined assertion error" _
+)
+    If Not vValue Then
+        Call RaiseError("Runtime.Assert", vComment)
+    End If
+End Sub
+
+Public Sub RaiseUndefinedTestModuleHandler()
+    Call RaiseError("Controller", "Cannot find an executor section for the test module.")
+End Sub
+
+Public Sub RaiseUndefinedTestCaseHandler()
+    Call RaiseError("Controller", "Cannot find an executor for the test case of the current test module.")
 End Sub
