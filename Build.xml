@@ -2,67 +2,24 @@
 <build>
 	<project-name>Excel VBA Application</project-name>
 	<is-background-mode-enabled>False</is-background-mode-enabled>
-	<required-references>
-		<item>
-			<name>ADODB</name>
-			<description>Microsoft ActiveX Data Objects 6.1 Library</description>
-			<guid>{B691E011-1797-432E-907A-4D8C69339129}</guid>
-			<major>6</major>
-			<minor>1</minor>
-		</item>
-		<item>
-			<name>ADOR</name>
-			<description>Microsoft ActiveX Data Objects Recordset 6.0 Library</description>
-			<guid>{00000300-0000-0010-8000-00AA006D2EA4}</guid>
-			<major>6</major>
-			<minor>0</minor>
-		</item>
-		<item>
-			<name>MSXML2</name>
-			<description>Microsoft XML, v6.0</description>
-			<guid>{F5078F18-C551-11D3-89B9-0000F81FE221}</guid>
-			<major>6</major>
-			<minor>0</minor>
-		</item>
-		<item>
-			<name>Scripting</name>
-			<description>Microsoft Scripting Runtime</description>
+	<references>
+		<item
+			name="Scripting"
+			description="Microsoft Scripting Runtime"
+		>
 			<guid>{420B2830-E718-11CF-893D-00A0C9054228}</guid>
 			<major>1</major>
 			<minor>0</minor>
 		</item>
-		<item>
-			<name>VBIDE</name>
-			<description>Microsoft Visual Basic for Applications Extensibility 5.3</description>
+		<item
+			name="VBIDE"
+			description="Microsoft Visual Basic for Applications Extensibility 5.3"
+		>
 			<guid>{0002E157-0000-0000-C000-000000000046}</guid>
 			<major>5</major>
 			<minor>3</minor>
 		</item>
-		<item>
-			<name>VBScript_RegExp_55</name>
-			<description>Microsoft VBScript Regular Expressions 5.5</description>
-			<guid>{3F4DACA7-160D-11D2-A8E9-00104B365C9F}</guid>
-			<major>5</major>
-			<minor>5</minor>
-		</item>
-	</required-references>
-	<required-library-modules>
-		<!--
-		<filename>LibClsDBConnection.cls</filename>
-		<filename>LibClsDBRecordset.cls</filename>
-		<filename>LibClsList.cls</filename>
-		-->
-		<filename>LibClsSet.cls</filename>
-		<!--
-		<filename>LibClsTable.cls</filename>
-		<filename>LibModExcel.bas</filename>
-		<filename>LibModFile.bas</filename>
-		<filename>LibModHttp.bas</filename>
-		-->
-		<filename>LibModJson.bas</filename>
-		<!--
-		<filename>LibModMail.bas</filename>
-		<filename>LibModString.bas</filename>
-		-->
-	</required-library-modules>
+	</references>
+	<external-modules>
+	</external-modules>
 </build>

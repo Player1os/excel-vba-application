@@ -13,170 +13,97 @@ Set vFileSystemObject = CreateObject("Scripting.FileSystemObject")
 ' Define external object constants.
 Const adTypeText = 2
 Const adTypeBinary = 1
+Const adSaveCreateOverWrite = 2
 Const fsoForReading = 1
 Const vbext_ct_StdModule = 1
 Const vbext_ct_ClassModule = 2
 Const vbext_ct_MSForm = 3
 Const xlMaximized = -4137
+Const WshFinished = 1
 Const xlOpenXMLWorkbookMacroEnabled = 52
 
-' Define internal class constants.
-Const vClsListInitialArraySize = 32
-Const vClsListResizeThreshold = 0.25
-Const vClsListResizeFactor = 2
+Sub TaskNotification( _
+	vTaskName, _
+	vMessage _
+)
+	Call WScript.StdOut.WriteLine("-[ " & vTaskName & " ]- " & vMessage)
+End Sub
 
-Class ClsList
+Sub TaskSuccessNotification( _
+	vTaskName _
+)
+	Call TaskNotification(vTaskName, "has ended successfully.")
+End Sub
+
+Function ExecuteShell( _
+	vTaskName, _
+	vCommand, _
+	vIsStandardInputOutputReturned, _
+	vIsContinueOnErrorEnabled _
+)
 	' Declare local variables.
-	Private vArray()
-	Private vArraySize
-	Private vCount
+	Dim vStandardInputText
+	Dim vStandardOutputText
+	Dim vStandardErrorText
 
-	Private Sub Class_Initialize()
-		' Set the underlying array size.
-		vArraySize = vClsListInitialArraySize
+	' Initialize the result dictionary.
+	ExecuteShell = CreateObject("Scripting.Dictionary")
 
-		' Initialize the underlying array.
-		Redim vArray(vArraySize - 1)
+	' Initialize the execution of the given command.
+	With vWScriptShell.Exec(vCommand)
+		' Wait for the subprocess to end.
+		Do While .Status <> WshFinished
+			' If setup to do so, forward any of the recieved standard input to the subprocess.
+			If _
+				Not vIsStandardInputOutputReturned _
+				And Not WScript.StdIn.AtEndOfStream _
+			Then
+				vStandardInputText = WScript.StdIn.ReadAll()
+				If vStandardInputText <> vbNullString Then
+					Call .StdIn.Write(vStandardInputText)
+				End If
+			End If
 
-		' Set the actual item count.
-		vCount = 0
-	End Sub
+			' Give the subprocess time to execute.
+			Call WScript.Sleep(100)
+		Loop
 
-	Public Property Get Count()
-		' Return the actual item count.
-		Count = vCount
-	End Property
+		' Collect the standard output and standard error stream content.
+		vStandardOutputText = .StdOut.ReadAll()
+		vStandardErrorText = .StdErr.ReadAll()
 
-	Private Property Let Count( _
-		vNewCount _
-	)
-		vCount = vNewCount
-	End Property
-
-	Public Function Add( _
-		vValue _
-	)
-		' Enlarge the underlying array if needed.
-		If (Count / vArraySize) > (1 - vClsListResizeThreshold) Then
-			vArraySize = vArraySize * vClsListResizeFactor
-			Redim Preserve vArray(vArraySize - 1)
-		End If
-
-		' Increment the item count.
-		Count = Count + 1
-
-		' Store the new value after the last populated value of the underlying array.
-		Set vArray(Count - 1) = vValue
-
-		' Return the current instance for chaining.
-		Set Add = Me
-	End Function
-
-	Public Function Remove()
-		' Shrink the underlying array if needed.
-		If (vClsListInitialArraySize < vArraySize) And ((Count / vArraySize) < vClsListResizeThreshold) Then
-			vArraySize = Round(vArraySize / vClsListResizeFactor + 0.5)
-			Redim Preserve vArray(vArraySize - 1)
-		End If
-
-		' Decrement the item count.
-		Count = Count - 1
-
-		' Return the current instance for chaining.
-		Set Remove = Me
-	End Function
-
-	Public Property Get Item( _
-		vIndex _
-	)
-		' Verify that the list boundaries are not exceeded.
-		If (0 <= vIndex) Or (vIndex < Count) Then
-			' Return the value at the corresponding index in the underlying array.
-			Item = vArray(vIndex)
+		' Process the standard input output depending on the inheritance setting.
+		If vIsStandardInputOutputReturned Then
+			With ExecuteShell
+				Call .Add("StandardOutput", vStandardOutputText)
+				Call .Add("StandardError", vStandardErrorText)
+			End With
 		Else
-			' Return null.
-			Item = Null
-		End If
-	End Property
-
-	Public Property Let Item( _
-		vIndex, _
-		vValue _
-	)
-		' Verify that the list boundaries are not exceeded.
-		If (0 <= vIndex) Or (vIndex < Count) Then
-			' Set the value at the corresponding index in the underlying array.
-			vArray(vIndex) = vValue
-		End If
-	End Property
-
-	Public Function Items()
-		' Declare local variables.
-		Dim vItems()
-		Dim vIndex
-
-		' Resize the result array to hold all of the list's items and no more.
-		Redim vItems(Count - 1)
-
-		' Copy each of the values from the underlying array to the result array.
-		For vIndex = 0 To Count - 1
-			Set vItems(vIndex) = vArray(vIndex)
-		Next
-
-		' Return the result array.
-		Items = vItems
-	End Function
-End Class
-
-Class ClsSet
-	' Declare local variables.
-	Dim vDictionary
-
-	Private Sub Class_Initialize()
-		' Initialize the underlying dictionary.
-		Set vDictionary = CreateObject("Scripting.Dictionary")
-	End Sub
-
-	Public Property Get Count()
-		' Return the count value from the underlying dictionary.
-		Count = vDictionary.Count
-	End Property
-
-	Public Function Add( _
-		vValue _
-	)
-		' Verify that the value does not already exist in the set.
-		If Not Exists(vValue) Then
-			' Add to the underlying dictionary.
-			Call vDictionary.Add(vValue, Null)
+			Call WScript.StdOut.Write(vStandardOutputText)
+			Call WScript.StdErr.Write(vStandardErrorText)
 		End If
 
-		' Return the current instance for chaining.
-		Set Add = Me
-	End Function
+		' Retrieve the exit code.
+		Call ExecuteShell.Add("ExitCode", .ExitCode)
 
-	Public Function Remove( _
-		vValue _
-	)
-		' Remove from the underlying dictionary.
-		Call vDictionary.Remove(vValue)
+		' Process the exit code depending on the function's corresponding parameter.
+		If Not vIsContinueOnErrorEnabled Then
+			' Output all of the gathered information about the subprocess's execution.
+			With WScript.StdErr
+				Call .WriteLine("The child process exited with the status code: " & ExecuteShell("ExitCode"))
+				Call .WriteLine("- command: " & vCommand)
+				If vIsStandardInputOutputReturned Then
+					Call .WriteLine("- standard output: " & ExecuteShell("StandardOutput"))
+					Call .WriteLine("- standard error: " & ExecuteShell("StandardError"))
+				End If
+			End With
 
-		' Return the current instance for chaining.
-		Set Remove = Me
-	End Function
-
-	Public Function Exists( _
-		vValue _
-	)
-		' Check in the underlying dictionary.
-		Exists = vDictionary.Exists(vValue)
-	End Function
-
-	Public Function Items()
-		' Return the keys from the underlying dictionary.
-		Items = vDictionary.Keys()
-	End Function
-End Class
+			' Report the task's failure and exit the current process.
+			Call TaskNotification(vTaskName, "has failed.")
+			Call WScript.Quit(-1)
+		End If
+	End With
+End Function
 
 Function ReadTextFile( _
 	vFilePath _
@@ -202,6 +129,31 @@ Sub WriteTextFile( _
 
 		' Close the text file.
 		Call .Close
+	End With
+End Sub
+
+Sub DownloadFileOverHttp( _
+	vFilePath, _
+	vMethod, _
+	vUrl _
+)
+	' Declare local variables.
+	Dim vXmlHttp
+
+	' Create an instance of the xml http object.
+	Set vXmlHttp = CreateObject("MSXML2.XMLHTTP.6.0")
+	With vXmlHttp
+		' Prepare the http request and send it.
+		Call .open(vMethod, vUrl, False)
+		Call .send
+	End With
+
+	' Write the file in binary mode to the specified path.
+	With CreateObject("ADODB.Stream")
+		.Type = adTypeBinary
+		Call .Open
+		Call .Write(vXmlHttp.responseBody)
+		Call .SaveToFile(vFilePath, adSaveCreateOverWrite)
 	End With
 End Sub
 
@@ -240,10 +192,12 @@ Function LoadBuildConfiguration( _
 	vFilePath _
 )
 	' Declare local variables.
-	Dim vList
-	Dim vChildNode
+	Dim vReferences()
+	Dim vExternalModules()
+	Dim vIndex
+	Dim vItemNode
+	Dim vItemNodes
 	Dim vItem
-	Dim vSet
 
 	' Initialize the msxml dom document object.
 	With CreateObject("MSXML2.DOMDocument.6.0")
@@ -264,27 +218,48 @@ Function LoadBuildConfiguration( _
 			' Load the flag that indicates whether background mode is enabled for the project.
 			Call LoadBuildConfiguration.Add("IsBackgroundModeEnabled", .selectSingleNode("is-background-mode-enabled").Text = "True")
 
-			' Load the required reference.
-			Set vList = New ClsList
-			For Each vChildNode In .selectSingleNode("required-references").selectNodes("item")
-				Set vItem = CreateObject("Scripting.Dictionary")
-				With vChildNode
-					Call vItem.Add("Name", .selectSingleNode("name").Text)
-					Call vItem.Add("Description", .selectSingleNode("description").Text)
-					Call vItem.Add("GUID", .selectSingleNode("guid").Text)
-					Call vItem.Add("Major", CLng(.selectSingleNode("major").Text))
-					Call vItem.Add("Minor", CLng(.selectSingleNode("minor").Text))
-				End With
-				Call vList.Add(vItem)
-			Next
-			Call LoadBuildConfiguration.Add("RequiredReferenceList", vList)
+			' Load the required references.
+			Set vItemNodes = .selectSingleNode("references").selectNodes("item")
+			If vItemNodes.length = 0 Then
+				Call LoadBuildConfiguration.Add("References", Null)
+			Else
+				Redim vReferences(vItemNodes.length - 1)
+				vIndex = 0
+				For Each vItemNode In vItemNodes
+					Set vItem = CreateObject("Scripting.Dictionary")
 
-			' Load the required library module file names.
-			Set vSet = New ClsSet
-			For Each vChildNode In .selectSingleNode("required-library-modules").selectNodes("filename")
-				Call vSet.Add(vChildNode.Text)
-			Next
-			Call LoadBuildConfiguration.Add("RequiredLibraryModuleSet", vSet)
+					With vItemNode
+						Call vItem.Add("GUID", .selectSingleNode("guid").Text)
+						Call vItem.Add("Major", CLng(.selectSingleNode("major").Text))
+						Call vItem.Add("Minor", CLng(.selectSingleNode("minor").Text))
+					End With
+
+					Set vReferences(vIndex) = vItem
+					vIndex = vIndex + 1
+				Next
+				Call LoadBuildConfiguration.Add("References", vReferences)
+			End If
+
+			' Load the required external modules.
+			Set vItemNodes = .selectSingleNode("external-modules").selectNodes("item")
+			If vItemNodes.length = 0 Then
+				Call LoadBuildConfiguration.Add("ExternalModules", Null)
+			Else
+				Redim vExternalModules(vItemNodes.length - 1)
+				vIndex = 0
+				For Each vItemNode In vItemNodes
+					Set vItem = CreateObject("Scripting.Dictionary")
+
+					With vItemNode
+						Call vItem.Add("Name", .selectSingleNode("name").Text)
+						Call vItem.Add("URL", .selectSingleNode("url").Text)
+					End With
+
+					Set vExternalModules(vIndex) = vItem
+					vIndex = vIndex + 1
+				Next
+				Call LoadBuildConfiguration.Add("ExternalModules", vExternalModules)
+			End If
 		End With
 	End With
 End Function
@@ -350,7 +325,7 @@ Function GetMainWorkbookFilePassword( _
 		.Position = 0
 		.Type = adTypeBinary
 		.Position = 0
-		vBase64Node.nodeTypedValue = .Read
+		vBase64Node.nodeTypedValue = .Read()
 	End With
 
 	' Return the processed string result.
@@ -363,19 +338,19 @@ Sub CreateMainWorkbook( _
 )
 	' Declare local variables.
 	Dim vBootstrapFolder
-	Dim vLibraryFolder
+	Dim vScriptFolder
 	Dim vSourceFolder
 	Dim vTestFolder
 	Dim vMainWorkbookFilePath
-	Dim vReferenceItem
+	Dim vTempModuleFilePath
+	Dim vItem
 	Dim vModuleFile
-	Dim vFileName
 
 	' Load the file system object.
 	With vFileSystemObject
-		' Load the bootstrap, library, source and test folder objects.
+		' Load the bootstrap, script, source and test folder objects.
 		Set vBootstrapFolder = .GetFolder(.BuildPath(vProjectDirectoryPath, "Bootstrap"))
-		Set vLibraryFolder = .GetFolder(.BuildPath(vProjectDirectoryPath, "Library"))
+		Set vScriptFolder = .GetFolder(.BuildPath(vProjectDirectoryPath, "Script"))
 		Set vSourceFolder = .GetFolder(.BuildPath(vProjectDirectoryPath, "Source"))
 		Set vTestFolder = .GetFolder(.BuildPath(vProjectDirectoryPath, "Test"))
 
@@ -389,10 +364,9 @@ Sub CreateMainWorkbook( _
 				' If the main workbook file is newer than any module file or this script, it doesn't need to be rebuilt.
 				If ( _
 					(GetFolderDateLastModified(vBootstrapFolder) < .DateLastModified) _
-					And (GetFolderDateLastModified(vLibraryFolder) < .DateLastModified) _
+					And (GetFolderDateLastModified(vScriptFolder) < .DateLastModified) _
 					And (GetFolderDateLastModified(vSourceFolder) < .DateLastModified) _
 					And (GetFolderDateLastModified(vTestFolder) < .DateLastModified) _
-					And (vFileSystemObject.GetFile(WScript.ScriptFullName).DateLastModified < .DateLastModified) _
 				) Then
 					Exit Sub
 				End If
@@ -410,12 +384,17 @@ Sub CreateMainWorkbook( _
 
 		' Create a new workbook.
 		With .Workbooks.Add()
+			' Rename the sheet of the main workbook.
+			.Worksheets(1).Name = "ThisWorksheet"
+
 			' Load the vbproject of the new workbook.
 			With .VBProject
-				' Add external references to the VBProject.
-				For Each vReferenceItem In vBuildConfiguration("RequiredReferenceList").Items()
-					Call .References.AddFromGuid(vReferenceItem("GUID"), vReferenceItem("Major"), vReferenceItem("Minor"))
-				Next
+				' Add the references, defined in the build configuration, to the VBProject.
+				If Not IsNull(vBuildConfiguration("References")) Then
+					For Each vItem In vBuildConfiguration("References")
+						Call .References.AddFromGuid(vItem("GUID"), vItem("Major"), vItem("Minor"))
+					Next
+				End If
 
 				' Import the "Runtime" component.
 				Call .VBComponents.Import(vFileSystemObject.BuildPath(vBootstrapFolder.Path, "Runtime.bas"))
@@ -430,10 +409,22 @@ Sub CreateMainWorkbook( _
 					Call .AddFromFile(vFileSystemObject.BuildPath(vBootstrapFolder.Path, "ThisWorkbook.bas"))
 				End With
 
-				' Import the library modules that are listed in the required library modules.
-				For Each vFileName In vBuildConfiguration("RequiredLibraryModuleSet").Items()
-					Call .VBComponents.Import(vFileSystemObject.BuildPath(vLibraryFolder.Path, vFileName))
-				Next
+				' Rename the sheet module of the vbproject.
+				.VBComponents("Sheet1").Name = "ThisWorksheet"
+
+				' Determine the temp folder path.
+				With vFileSystemObject
+					vTempModuleFilePath = .BuildPath(.BuildPath(vProjectDirectoryPath, "Temp"), "Module")
+				End With
+
+				' Download and import the external modules, defined in the build configuration.
+				If Not IsNull(vBuildConfiguration("ExternalModules")) Then
+					For Each vItem In vBuildConfiguration("ExternalModules")
+						Call DownloadFileOverHttp(vTempModuleFilePath, "GET", vItem("URL"))
+						Call .VBComponents.Import(vTempModuleFilePath)
+						Call vFileSystemObject.DeleteFile(vTempModuleFilePath)
+					Next
+				End If
 
 				' Import the source modules.
 				For Each vModuleFile In vSourceFolder.Files
@@ -493,11 +484,11 @@ Sub ExportMainWorkbookModules( _
 	vBuildConfiguration _
 )
 	' Declare local variables.
-	Dim vBootstrapFolderPath
-	Dim vLibraryFolderPath
-	Dim vSourceFolderPath
-	Dim vTestFolderPath
+	Dim vSourceFolder
+	Dim vTestFolder
 	Dim vModuleFile
+	Dim vExcludedModuleSet
+	Dim vItem
 	Dim vModuleFilePath
 	Dim vVBComponent
 	Dim vModuleFileDirectoryPath
@@ -505,20 +496,30 @@ Sub ExportMainWorkbookModules( _
 
 	' Load the file system object.
 	With vFileSystemObject
-		' Determine the bootstrap, library, source and test folder paths.
-		vBootstrapFolderPath = .BuildPath(vProjectDirectoryPath, "Bootstrap")
-		vLibraryFolderPath = .BuildPath(vProjectDirectoryPath, "Library")
-		vSourceFolderPath = .BuildPath(vProjectDirectoryPath, "Source")
-		vTestFolderPath = .BuildPath(vProjectDirectoryPath, "Test")
+		' Determine the source and test folder paths.
+		Set vSourceFolder = .GetFolder(.BuildPath(vProjectDirectoryPath, "Source"))
+		Set vTestFolder = .GetFolder(.BuildPath(vProjectDirectoryPath, "Test"))
 
 		' Remove all of the old source module files.
-		For Each vModuleFile In .GetFolder(vSourceFolderPath).Files
+		For Each vModuleFile In vSourceFolder.Files
 			Call vModuleFile.Delete
 		Next
 
 		' Remove all of the old test module files.
-		For Each vModuleFile In .GetFolder(vTestFolderPath).Files
+		For Each vModuleFile In vTestFolder.Files
 			Call vModuleFile.Delete
+		Next
+	End With
+
+	' Prepare a list of bootstrap and external modules that shall not be exported.
+	Set vExcludedModuleSet = CreateObject("Scripting.Dictionary")
+	With vExcludedModuleSet
+		Call .Add("Runtime", Null)
+		Call .Add("ThisUserForm", Null)
+		Call .Add("ThisWorkbook", Null)
+		Call .Add("ThisWorksheet", Null)
+		For Each vItem In vBuildConfiguration("ExternalModules")
+			Call .Add(vItem("Name"), Null)
 		Next
 	End With
 
@@ -528,52 +529,34 @@ Sub ExportMainWorkbookModules( _
 		With .Workbooks.Open(GetMainWorkbookFilePath(vProjectDirectoryPath), , True, , GetMainWorkbookFilePassword(vBuildConfiguration))
 			' Load the vbproject of the main workbook.
 			With .VBProject
-				' Write the contents of the "ThisWorkbook" module to a file.
-				With .VBComponents("ThisWorkbook").CodeModule
-					vModuleFilePath = vFileSystemObject.BuildPath(vBootstrapFolderPath, "ThisWorkbook.bas")
-					Call WriteTextFile(vModuleFilePath, .Lines(1, .CountOfLines))
-					Call FormatExportedModuleFile(vModuleFilePath)
-				End With
-
-				' Export the "ThisUserForm" component to a file.
-				vModuleFilePath = vFileSystemObject.BuildPath(vBootstrapFolderPath, "ThisUserForm.frm")
-				Call .VBComponents("ThisUserForm").Export(vModuleFilePath)
-				Call FormatExportedModuleFile(vModuleFilePath)
-
 				' Export all of the VBProject's components.
 				For Each vVBComponent In .VBComponents
 					With vVBComponent
-						' Determine the module file's directory path.
-						If _
-							(.Name = "ThisUserForm") _
-							Or (.Name = "Runtime") _
-						Then
-							vModuleFileDirectoryPath = vBootstrapFolderPath
-						ElseIf Left(.Name, 3) = "Lib" Then
-							vModuleFileDirectoryPath = vLibraryFolderPath
-						ElseIf Left(.Name, 4) = "Test" Then
-							vModuleFileDirectoryPath = vTestFolderPath
-						Else
-							vModuleFileDirectoryPath = vSourceFolderPath
-						End If
+						' Check whether the current component is excluded.
+						If Not vExcludedModuleSet.Exists(.Name) Then
+							' Determine the module file's directory path.
+							If Left(.Name, 4) = "Test" Then
+								vModuleFileDirectoryPath = vTestFolder.Path
+							Else
+								vModuleFileDirectoryPath = vSourceFolder.Path
+							End If
 
-						' Determine the module file's extension.
-						Select Case .Type
-							Case vbext_ct_StdModule
-								vModuleFileExtension = "bas"
-							Case vbext_ct_ClassModule
-								vModuleFileExtension = "cls"
-							Case vbext_ct_MSForm
-								vModuleFileExtension = "frm"
-							Case Else
-								vModuleFileExtension = vbNullString
-						End Select
+							' Determine the module file's extension.
+							Select Case .Type
+								Case vbext_ct_StdModule
+									vModuleFileExtension = "bas"
+								Case vbext_ct_ClassModule
+									vModuleFileExtension = "cls"
+								Case Else
+									vModuleFileExtension = vbNullString
+							End Select
 
-						' Export the current component to the specfied module if an extension is specified.
-						If vModuleFileExtension <> vbNullString Then
-							vModuleFilePath = vFileSystemObject.BuildPath(vModuleFileDirectoryPath, .Name & "." & vModuleFileExtension)
-							Call .Export(vModuleFilePath)
-							Call FormatExportedModuleFile(vModuleFilePath)
+							' Export the current component to the specfied module if an extension is specified.
+							If vModuleFileExtension <> vbNullString Then
+								vModuleFilePath = vFileSystemObject.BuildPath(vModuleFileDirectoryPath, .Name & "." & vModuleFileExtension)
+								Call .Export(vModuleFilePath)
+								Call FormatExportedModuleFile(vModuleFilePath)
+							End If
 						End If
 					End With
 				Next
@@ -586,9 +569,6 @@ Sub ExportMainWorkbookModules( _
 		' Close the excel application instance.
 		Call .Quit
 	End With
-
-	' Revert the changes made to the "ThisUserform" frx file.
-	Call vWScriptShell.Run("git checkout -q -- " & vFileSystemObject.BuildPath(vBootstrapFolderPath, "ThisUserForm.frx"), 0, True)
 End Sub
 
 Sub CreateExecuteScript( _

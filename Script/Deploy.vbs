@@ -1,10 +1,14 @@
 Option Explicit
 
 ' Declare local variables.
+Dim vTaskName
 Dim vProjectDirectoryPath
 Dim vDeployDirectoryPath
 Dim vBuildConfiguration
 Dim vDeployAssetDirectoryPath
+
+' Define the current task name.
+vTaskName = "DEPLOY"
 
 ' Retrieve the project's directory path.
 vProjectDirectoryPath = GetLocalProjectDirectoryPath()
@@ -12,14 +16,14 @@ vProjectDirectoryPath = GetLocalProjectDirectoryPath()
 ' Load the deploy directory path.
 vDeployDirectoryPath = LoadDeployDirectoryPath(vProjectDirectoryPath)
 If vDeployDirectoryPath = vbNullString Then
-	Call MsgBox("Cannot find the 'Deploy.txt' file in the project directory containing a valid directory path.", vbExclamation)
-	Call WScript.Quit()
+	Call TaskNotification(vTaskName, "cannot find the 'Deploy.txt' file in the project directory containing a valid directory path.")
+	Call WScript.Quit(-1)
 End If
 
 ' If the main workbook is already open, notify the user and exit.
 If IsMainWorkbookOpen(vProjectDirectoryPath) Then
-	Call MsgBox("The main workbook is already open in a different process and must be closed before proceeding.", vbExclamation)
-	Call WScript.Quit()
+	Call TaskNotification(vTaskName, "the main workbook is already open in a different process and must be closed before proceeding.")
+	Call WScript.Quit(-1)
 End If
 
 ' Load the build configuration from the build configuration xml document.
@@ -43,3 +47,6 @@ With vFileSystemObject
 	End If
 	Call .CopyFolder(.BuildPath(vProjectDirectoryPath, "Assets"), vDeployAssetDirectoryPath, True)
 End With
+
+' Report the task's success.
+Call TaskSuccessNotification(vTaskName)
